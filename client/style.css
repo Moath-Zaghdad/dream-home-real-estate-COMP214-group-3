@@ -1,0 +1,106 @@
+* {
+    margin: 0;
+}
+
+body {
+    display: grid;
+    grid-template-areas:
+    "head head head"
+    "nav main aside"
+    "footer footer footer";
+    grid-template-rows: 0.5fr 1.5fr 0.5fr;
+    grid-template-columns: 0.5fr 1.5fr 0.5fr;
+    height: 100vh;
+    
+}
+
+header {
+    grid-area: head;
+    text-align: center;
+    border-bottom: solid black 1px;
+    background-color: black;
+    color: white;
+    padding:2%;
+    
+}
+
+footer {
+    grid-area: footer;
+    text-align: center;
+    border-top: solid black 1px;
+    background-color: black;
+    color: white;
+    position: fixed; 
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    padding:2%;
+}
+
+nav {
+    grid-area: nav;
+    border-right: solid black 1px;
+    padding-top: 4%;
+    
+    
+}
+
+aside {
+    grid-area: aside;
+    border-left: solid black 1px;
+    
+}
+
+main {
+    grid-area: main;
+    padding: 2%;
+    margin-bottom: 160px;
+    
+}
+
+ul {
+    list-style-type: none;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 5px;
+
+}
+
+tr:nth-child(even) {
+    background-color:#dddddd;
+}
+
+li {
+    padding-bottom:2px;
+}
+
+h3 {
+    padding: 3px;
+}
+
+label {
+    display: block;
+    padding: 3px;
+}
+
+form {
+    text-align: left;
+}
+
+h3 {
+    text-align: center;
+    margin-bottom: 3%;
+}
+
+.center {
+    text-align: center;
+}
+
+.marginTop {
+    text-align: center;
+    margin-top: 7%;
+}
