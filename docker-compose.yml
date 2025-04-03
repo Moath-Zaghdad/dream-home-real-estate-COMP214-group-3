@@ -4,10 +4,12 @@ services:
   oracle:
     image: container-registry.oracle.com/database/enterprise:19.19.0.0
     container_name: orclcdb
+    restart: unless-stopped
     ports:
       - "1521:1521"
     volumes:
       - ./oradata:/opt/oracle/oradata
+      - ./init-app-user.sql:/opt/oracle/scripts/startup/init-app-user.sql:ro
     environment:
       ORACLE_PWD: "PassWord-123"
       ORACLE_SID: "ORCLCDB"
@@ -24,6 +26,8 @@ services:
       memlock:
         soft: 3221225472
         hard: 3221225472
+    networks:
+      - default
 
   php-app:
     build:
@@ -31,14 +35,17 @@ services:
     container_name: php-app
     ports:
       - "8080:80"
+    restart: unless-stopped
     volumes:
-      - ./:/var/www/html/
+      - ./client:/var/www/html/
     environment:
       DB_HOST: oracle
       DB_PORT: 1521
-      DB_USER: SYS
-      DB_PASSWORD: "PassWord-123"
-      DB_NAME: ORCLCDB
+      DB_USER: my_app_user  # From the init-app-user.sql
+      DB_PASSWORD: "my_secure_password"  # From the init-app-user.sql
+      DB_NAME: ORCLPDB1
+    networks:
+      - default
 
     depends_on:
       - oracle

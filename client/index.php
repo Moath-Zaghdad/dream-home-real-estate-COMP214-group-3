@@ -16,10 +16,10 @@
     <nav>
         <div>
             <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="staff.html">Staff Main Menu</a></li>
-                <li><a href="branch.html">Branch Main Menu</a></li>
-                <li><a href="client.html">Client Main Menu</a></li>
+                <li><a href="index.php">Home</a></li>
+                <li><a href="staff.php">Staff Main Menu</a></li>
+                <li><a href="branch.php">Branch Main Menu</a></li>
+                <li><a href="client.php">Client Main Menu</a></li>
             </ul>
         </div>
     </nav>
@@ -29,9 +29,9 @@
                 <h3>Welcome to Centennial Dream Home Real Estate App</h3>
             </div>
             <div class="center">
-                <a href="staff.html"><button>Staff Main Menu</button></a>
-                <a href="branch.html"><button>Branch Main Menu</button></a>
-                <a href="client.html"><button>Client Main Menu</button></a>
+                <a href="staff.php"><button>Staff Main Menu</button></a>
+                <a href="branch.php"><button>Branch Main Menu</button></a>
+                <a href="client.php"><button>Client Main Menu</button></a>
             </div>
         </div>
     </main>

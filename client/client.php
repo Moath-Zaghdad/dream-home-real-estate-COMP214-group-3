@@ -42,41 +42,43 @@
                         trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
                     }
 
-                    // PL/SQL query to fetch client details
-                    $sql = "BEGIN
-                              FOR rec IN (SELECT clientNo, fName, lName FROM DH_CLIENT) LOOP
-                                DBMS_OUTPUT.PUT_LINE(rec.clientNo || ',' || rec.fName || ' ' || rec.lName);
-                              END LOOP;
-                            END;";
-
-                    echo "";
-                    echo "<pre>";
-                    echo htmlentities($sql);
-                    echo "</pre>";
-
-                    // Prepare the statement
-                    $stmt = oci_parse($conn, $sql);
-
                     // Enable DBMS_OUTPUT
-                    oci_set_prefetch($stmt, 1000);
-                    oci_exec($stmt, OCI_DEFAULT);
+                    $enable = oci_parse($conn, "BEGIN DBMS_OUTPUT.ENABLE(NULL); END;");
+                    oci_execute($enable);
 
-                    // Fetch DBMS_OUTPUT lines
-                    $output = '';
-                    oci_set_output($conn, 100000, $output_length);
+                    // PL/SQL block to output all clients
+                    $sql = "
+                    BEGIN
+                        FOR rec IN (SELECT clientNo, fName, lName FROM DH_CLIENT ORDER BY clientNo) LOOP
+                            DBMS_OUTPUT.PUT_LINE(rec.clientNo || ',' || rec.fName || ' ' || rec.lName);
+                        END LOOP;
+                    END;
+                    ";
+
+                    echo "<pre>" . htmlentities($sql) . "</pre>";
+
+                    $stmt = oci_parse($conn, $sql);
                     oci_execute($stmt);
 
-                    $clients = explode("\n", trim($output));
+                    // Prepare to fetch lines from DBMS_OUTPUT
+                    $output_stmt = oci_parse($conn, "BEGIN DBMS_OUTPUT.GET_LINE(:line, :status); END;");
+                    oci_bind_by_name($output_stmt, ":line", $line, 32767);
+                    oci_bind_by_name($output_stmt, ":status", $status);
 
-                    foreach ($clients as $client_info) {
-                        if (!empty($client_info)) {
-                            list($clientNo, $fullName) = explode(',', $client_info);
+                    // Loop and build dropdown options
+                    while (true) {
+                        oci_execute($output_stmt);
+                        if ($status != 0) break;
+
+                        if (!empty($line)) {
+                            list($clientNo, $fullName) = explode(',', $line);
                             echo '<option value="' . htmlspecialchars($clientNo) . '">' . htmlspecialchars($fullName) . '</option>';
                         }
                     }
 
                     // Clean up
                     oci_free_statement($stmt);
+                    oci_free_statement($output_stmt);
                     oci_close($conn);
                     ?>
                 </select>

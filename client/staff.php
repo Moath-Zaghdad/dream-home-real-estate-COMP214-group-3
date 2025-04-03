@@ -42,31 +42,39 @@
                         trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
                     }
 
-                    // PL/SQL query to fetch staff details
-                    $sql = "BEGIN
-                                 FOR rec IN (SELECT staffNo, fName, lName FROM DH_STAFF) LOOP
-                                     DBMS_OUTPUT.PUT_LINE(rec.staffNo || ',' || rec.fName || ' ' || rec.lName);
-                                 END LOOP;
-                             END;";
-
-                    echo "";
-                    echo "<pre>";
-                    echo htmlentities($sql);
-                    echo "</pre>";
-
-                    // Prepare the statement
-                    $stmt = oci_parse($conn, $sql);
-
                     // Enable DBMS_OUTPUT
-                    oci_set_prefetch($stmt, 1000);
-                    oci_exec($stmt, OCI_DEFAULT);
+                    $enable_stmt = oci_parse($conn, "BEGIN DBMS_OUTPUT.ENABLE(NULL); END;");
+                    oci_execute($enable_stmt);
 
-                    // Fetch DBMS_OUTPUT lines
-                    $output = '';
-                    oci_set_output($conn, 100000, $output_length);
+                    // PL/SQL block to print staff members
+                    $sql = "
+                    BEGIN
+                        FOR rec IN (SELECT staffNo, fName, lName FROM DH_STAFF) LOOP
+                            DBMS_OUTPUT.PUT_LINE(rec.staffNo || ',' || rec.fName || ' ' || rec.lName);
+                        END LOOP;
+                    END;
+                    ";
+
+                    $stmt = oci_parse($conn, $sql);
                     oci_execute($stmt);
 
-                    $staff_members = explode("\n", trim($output));
+                    // Prepare to fetch DBMS_OUTPUT lines
+                    $output_stmt = oci_parse($conn, "BEGIN DBMS_OUTPUT.GET_LINE(:line, :status); END;");
+                    oci_bind_by_name($output_stmt, ":line", $line, 32767);
+                    oci_bind_by_name($output_stmt, ":status", $status);
+
+                    // Loop through all DBMS_OUTPUT lines
+                    while (true) {
+                        oci_execute($output_stmt);
+                        if ($status != 0) break;
+
+                        if (!empty($line)) {
+                            list($staffNo, $fullName) = explode(',', $line);
+                            echo '<option value="' . htmlspecialchars($staffNo) . '">' . htmlspecialchars($fullName) . '</option>';
+                        }
+                    }
+
+
 
                     foreach ($staff_members as $staff_info) {
                         if (!empty($staff_info)) {

@@ -34,61 +34,59 @@
                     <th>Postal Code</th>
                     <th>Action</th>
                 </tr>
-                <?php
-                // Include database credentials
-                include 'db_credentials.php';
+                    <?php
+                    // Include database credentials
+                    include 'db_credentials.php';
 
-                // Establish connection to Oracle
-                $conn = oci_connect($db_user, $db_password, $connection_string);
+                    // Establish connection to Oracle
+                    $conn = oci_connect($db_user, $db_password, $connection_string);
 
-                if (!$conn) {
-                    $e = oci_error();
-                    trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
-                }
+                    if (!$conn) {
+                        $e = oci_error();
+                        trigger_error(htmlentities($e['message'], ENT_QUOTES), E_USER_ERROR);
+                    }
 
-                // PL/SQL query to fetch all branch details
-                $sql = "BEGIN
-                                 FOR rec IN (SELECT branchNo, street, city, postcode FROM DH_BRANCH) LOOP
-                                     DBMS_OUTPUT.PUT_LINE(rec.branchNo || ',' || rec.street || ',' || rec.city || ',' || rec.postcode);
-                                 END LOOP;
-                             END;";
+                    // Enable DBMS_OUTPUT
+                    $stmt = oci_parse($conn, "BEGIN DBMS_OUTPUT.ENABLE(NULL); END;");
+                    oci_execute($stmt);
 
-                echo "";
-                echo "<pre>";
-                echo htmlentities($sql);
-                echo "</pre>";
+                    // Your PL/SQL block with DBMS_OUTPUT
+                    $plsql = "
+                    BEGIN
+                        FOR rec IN (SELECT branchNo, street, city, postcode FROM DH_BRANCH ORDER BY branchNo) LOOP
+                            DBMS_OUTPUT.PUT_LINE(rec.branchNo || ',' || rec.street || ',' || rec.city || ',' || rec.postcode);
+                        END LOOP;
+                    END;
+                    ";
 
-                // Prepare the statement
-                $stmt = oci_parse($conn, $sql);
+                    $stmt = oci_parse($conn, $plsql);
+                    oci_execute($stmt);
 
-                // Enable DBMS_OUTPUT
-                oci_set_prefetch($stmt, 1000);
-                oci_exec($stmt, OCI_DEFAULT);
+                    // Now fetch the lines from DBMS_OUTPUT
+                    $output_stmt = oci_parse($conn, "BEGIN DBMS_OUTPUT.GET_LINE(:line, :status); END;");
+                    oci_bind_by_name($output_stmt, ":line", $line, 32767);
+                    oci_bind_by_name($output_stmt, ":status", $status);
 
-                // Fetch DBMS_OUTPUT lines
-                $output = '';
-                oci_set_output($conn, 100000, $output_length);
-                oci_execute($stmt);
+                    while (true) {
+                        oci_execute($output_stmt);
+                        if ($status != 0) break;
 
-                $branches = explode("\n", trim($output));
-
-                foreach ($branches as $branch_info) {
-                    if (!empty($branch_info)) {
-                        list($branchNo, $street, $city, $postcode) = explode(',', $branch_info);
+                        list($branchNo, $street, $city, $postcode) = explode(',', $line);
                         echo '<tr>';
                         echo '<td>' . htmlspecialchars($branchNo) . '</td>';
                         echo '<td>' . htmlspecialchars($street) . '</td>';
                         echo '<td>' . htmlspecialchars($city) . '</td>';
                         echo '<td>' . htmlspecialchars($postcode) . '</td>';
-                        echo '<td><a href="branchForm.php?branchNo=' . htmlspecialchars($branchNo) . '"><button>Edit</button></a></td>';
+                        echo '<td><a href="branchForm.php?branchNo=' . urlencode($branchNo) . '"><button>Edit</button></a></td>';
                         echo '</tr>';
                     }
-                }
 
-                // Clean up
-                oci_free_statement($stmt);
-                oci_close($conn);
-                ?>
+                    // Cleanup
+                    oci_free_statement($stmt);
+                    oci_free_statement($output_stmt);
+                    oci_close($conn);
+                    ?>
+
             </table>
 
         </div>

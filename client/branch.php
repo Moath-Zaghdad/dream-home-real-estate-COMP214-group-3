@@ -51,45 +51,41 @@
             if (isset($_GET['branchNumber']) && !empty($_GET['branchNumber'])) {
                 $branchNumber = $_GET['branchNumber'];
 
-                // PL/SQL query to fetch branch details
+                // Enable DBMS_OUTPUT
+                $stmt = oci_parse($conn, 'BEGIN DBMS_OUTPUT.ENABLE(NULL); END;');
+                oci_execute($stmt);
+
+                // Your PL/SQL block
                 $sql = "BEGIN
                           FOR rec IN (SELECT street, city, postcode FROM DH_BRANCH WHERE branchNo = :branch_no) LOOP
                             DBMS_OUTPUT.PUT_LINE('Street: ' || rec.street || ', City: ' || rec.city || ', Postcode: ' || rec.postcode);
                           END LOOP;
                         END;";
 
-                echo "";
-                echo "<pre>";
-                echo htmlentities($sql);
-                echo "</pre>";
-
-                // Prepare the statement
                 $stmt = oci_parse($conn, $sql);
-
-                // Bind the branch number parameter
                 oci_bind_by_name($stmt, ':branch_no', $branchNumber);
-
-                // Enable DBMS_OUTPUT
-                oci_set_prefetch($stmt, 1000);
-                oci_exec($stmt, OCI_DEFAULT);
-
-                // Fetch DBMS_OUTPUT lines
-                $output = '';
-                oci_set_output($conn, 100000, $output_length);
                 oci_execute($stmt);
 
+                // Now fetch DBMS_OUTPUT results
+                $outputStmt = oci_parse($conn, "BEGIN DBMS_OUTPUT.GET_LINE(:line, :status); END;");
+                oci_bind_by_name($outputStmt, ":line", $line, 32767);
+                oci_bind_by_name($outputStmt, ":status", $status);
+
                 echo "<h4>Branch Details:</h4>";
-                if (!empty(trim($output))) {
-                    echo "<pre>" . htmlentities($output) . "</pre>";
-                } else {
-                    echo "<p>No branch found with the number: " . htmlspecialchars($branchNumber) . "</p>";
-                }
+                echo "<pre>";
+                do {
+                    oci_execute($outputStmt);
+                    if ($status == 0) {
+                        echo htmlentities($line) . "\n";
+                    }
+                } while ($status == 0);
+                echo "</pre>";
 
                 // Clean up
                 oci_free_statement($stmt);
+                oci_free_statement($outputStmt);
             }
 
-            // Close the connection outside the if block
             if (isset($conn)) {
                 oci_close($conn);
             }
